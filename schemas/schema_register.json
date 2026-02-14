@@ -15,7 +15,7 @@
         {
             "can_download_from": "",
             "downloads_to_file": "some_other_swagger.yaml",
-            "title": "Arbitrary Swagger",
+            "title": "Arbitrary Swagger schema",
             "id": "arbitrary",
             "example": true
         }
