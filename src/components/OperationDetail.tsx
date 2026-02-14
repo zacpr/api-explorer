@@ -43,10 +43,12 @@ function saveAuth(auth: SavedAuth) {
 
 function OperationDetail({ 
   operation, 
-  baseUrl = 'http://localhost:9200', 
+  baseUrl: propBaseUrl, 
   useProxy = false,
   preAuthenticatedInstance 
 }: OperationDetailProps) {
+  // Ensure baseUrl always has a valid value
+  const baseUrl = propBaseUrl && propBaseUrl.trim() !== '' ? propBaseUrl : 'http://localhost:9200';
   const savedAuth = loadAuth();
   
   const [pathParams, setPathParams] = useState<Record<string, string>>({});
@@ -91,6 +93,16 @@ function OperationDetail({
   const hasBody = ['post', 'put', 'patch'].includes(operation.method);
 
   const handleExecute = async () => {
+    console.log('Executing with baseUrl:', baseUrl, 'useProxy:', useProxy);
+    if (!baseUrl || baseUrl.trim() === '') {
+      setResult({
+        success: false,
+        error: 'API URL is empty. Please enter a valid base URL.',
+      });
+      setShowResponse(true);
+      return;
+    }
+    
     setIsExecuting(true);
     setResult(null);
     setShowResponse(false);

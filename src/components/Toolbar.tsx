@@ -64,7 +64,7 @@ function Toolbar({
         <label>API URL:</label>
         <input
           type="text"
-          value={baseUrl}
+          value={baseUrl || ''}
           onChange={(e) => onBaseUrlChange(e.target.value)}
           placeholder="http://localhost:9200"
           className="url-input"
