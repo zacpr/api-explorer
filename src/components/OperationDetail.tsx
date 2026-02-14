@@ -122,6 +122,10 @@ function OperationDetail({
         headers['Authorization'] = `Basic ${encoded}`;
       }
 
+      // Add Kibana-specific headers for CSRF protection
+      // The kbn-xsrf header is required for Kibana API requests
+      headers['kbn-xsrf'] = headers['kbn-xsrf'] || 'true';
+
       // Parse body if provided
       let parsedBody: unknown;
       if (body) {
