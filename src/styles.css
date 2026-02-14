@@ -1039,3 +1039,34 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+/* Response action buttons */
+.response-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.response-actions button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.response-actions button:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.response-actions .copy-response-btn:hover {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.response-actions .clear-result-btn:hover {
+  border-color: var(--error);
+  color: var(--error);
+}

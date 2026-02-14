@@ -45,6 +45,19 @@ export async function validateSchema(path: string): Promise<boolean> {
   }
 }
 
+/**
+ * Remove Kibana space-aware documentation from descriptions
+ * This text is repetitive and we have our own space-aware UI
+ */
+function cleanDescription(description: string | undefined): string | undefined {
+  if (!description) return description;
+  
+  // Match the pattern: "**Spaces method and path for this operation:**" ... "Refer to [Spaces]"
+  const spaceAwarePattern = /\*\*Spaces method and path for this operation:\*\*[\s\S]*?Refer to \[Spaces\][^\n]*\n?/;
+  
+  return description.replace(spaceAwarePattern, '').trim() || undefined;
+}
+
 function extractOperations(doc: OpenAPIV3.Document): ApiOperation[] {
   const operations: ApiOperation[] = [];
   const paths = doc.paths || {};
@@ -63,7 +76,7 @@ function extractOperations(doc: OpenAPIV3.Document): ApiOperation[] {
         method,
         path,
         summary: operation.summary,
-        description: operation.description,
+        description: cleanDescription(operation.description),
         tags: operation.tags || [],
         parameters: mergeParameters(
           pathItem.parameters as OpenAPIV3.ParameterObject[] | undefined,

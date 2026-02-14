@@ -242,6 +242,21 @@ function OperationDetail({
     setShowResponse(false);
   };
 
+  const handleCopyResponse = async () => {
+    if (!result?.response?.body) return;
+    
+    const textToCopy = typeof result.response.body === 'string' 
+      ? result.response.body 
+      : JSON.stringify(result.response.body, null, 2);
+    
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      // Could add a toast notification here in the future
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
+
   return (
     <div className="operation-detail">
       <div className="operation-header">
@@ -501,12 +516,21 @@ function OperationDetail({
             </div>
             <div className="response-actions">
               {result.success && (
-                <button 
-                  className="toggle-response-btn"
-                  onClick={() => setShowResponse(!showResponse)}
-                >
-                  {showResponse ? 'Hide Response' : 'Show Response'}
-                </button>
+                <>
+                  <button 
+                    className="toggle-response-btn"
+                    onClick={() => setShowResponse(!showResponse)}
+                  >
+                    {showResponse ? 'Hide Response' : 'Show Response'}
+                  </button>
+                  <button 
+                    className="copy-response-btn"
+                    onClick={handleCopyResponse}
+                    title="Copy response to clipboard"
+                  >
+                    📋 Copy
+                  </button>
+                </>
               )}
               <button className="clear-result-btn" onClick={handleClearResult}>
                 Clear
