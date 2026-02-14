@@ -42,42 +42,63 @@ export async function loadSchemaRegistry(): Promise<SchemaRegistry> {
   return response.json();
 }
 
+const SCHEMA_LOAD_TIMEOUT = 30000; // 30 seconds
+
 /**
- * Load a schema from the registry
+ * Load a schema from the registry with timeout
  * - If the file exists locally, use it
  * - If not, download from URL and use that
  */
 export async function loadSchemaFromRegistry(
-  entry: SchemaRegistryEntry
+  entry: SchemaRegistryEntry,
+  signal?: AbortSignal
 ): Promise<ParsedSchema> {
   const filePath = `/schemas/${entry.downloads_to_file}`;
   
-  // Check if file exists locally
-  const exists = await fileExists(filePath);
+  // Create timeout promise
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`Timeout loading ${entry.title} schema after ${SCHEMA_LOAD_TIMEOUT/1000}s`));
+    }, SCHEMA_LOAD_TIMEOUT);
+    
+    // Clear timeout if aborted
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timeoutId);
+      reject(new Error('Schema loading aborted'));
+    });
+  });
   
-  if (exists) {
-    console.log(`Loading ${entry.title} from local file: ${filePath}`);
-    return loadSchemaFromUrl(filePath);
-  }
+  const loadPromise = (async () => {
+    // Check if file exists locally
+    const exists = await fileExists(filePath);
+    
+    if (exists) {
+      console.log(`Loading ${entry.title} from local file: ${filePath}`);
+      return loadSchemaFromUrl(filePath);
+    }
+    
+    // File doesn't exist, try to download
+    if (!entry.can_download_from) {
+      throw new Error(
+        `Schema file '${entry.downloads_to_file}' not found locally and no download URL provided for '${entry.title}'`
+      );
+    }
+    
+    console.log(`Local file not found, downloading ${entry.title} from: ${entry.can_download_from}`);
+    
+    try {
+      // For now, we load directly from the URL
+      // In a production app with a backend, we'd save this to the file system
+      return loadSchemaFromUrl(entry.can_download_from);
+    } catch (error) {
+      throw new Error(
+        `Failed to load schema '${entry.title}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  })();
   
-  // File doesn't exist, try to download
-  if (!entry.can_download_from) {
-    throw new Error(
-      `Schema file '${entry.downloads_to_file}' not found locally and no download URL provided for '${entry.title}'`
-    );
-  }
-  
-  console.log(`Local file not found, downloading ${entry.title} from: ${entry.can_download_from}`);
-  
-  try {
-    // For now, we load directly from the URL
-    // In a production app with a backend, we'd save this to the file system
-    return loadSchemaFromUrl(entry.can_download_from);
-  } catch (error) {
-    throw new Error(
-      `Failed to load schema '${entry.title}': ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  }
+  // Race between loading and timeout
+  return Promise.race([loadPromise, timeoutPromise]);
 }
 
 /**

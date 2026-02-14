@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { searchOperations, filterByTag, filterByMethod } from '@/services/openapi';
 import { 
@@ -59,6 +59,8 @@ function App() {
   const [currentSchemaEntry, setCurrentSchemaEntry] = useState<SchemaRegistryEntry | null>(null);
   const [selectedInstance, setSelectedInstance] = useState<DecryptedCredential | null>(null);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const {
     schema,
@@ -80,6 +82,15 @@ function App() {
     setIsLoading,
     setError,
   } = useAppStore();
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Load registry and default schema on mount
   useEffect(() => {
@@ -105,6 +116,7 @@ function App() {
 
   const loadRegistryAndDefaultSchema = async () => {
     setIsLoading(true);
+    setLoadingProgress('Loading schema registry...');
     setError(null);
     try {
       const registry = await loadSchemaRegistry();
@@ -122,22 +134,51 @@ function App() {
       setError(err instanceof Error ? err.message : 'Failed to load schema registry');
     } finally {
       setIsLoading(false);
+      setLoadingProgress('');
     }
   };
 
   const loadSchemaEntry = async (entry: SchemaRegistryEntry) => {
+    // Cancel any previous loading
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    
     setCurrentSchemaEntry(entry);
     setSelectedInstance(null);
     setSelectedInstanceId(null);
-    const result = await loadSchemaFromRegistry(entry);
-    setSchema(result);
-    setOperations(result.operations);
-    setFilteredOperations(result.operations);
+    setLoadingProgress(`Loading ${entry.title} schema...`);
+    
+    try {
+      const result = await loadSchemaFromRegistry(entry, abortControllerRef.current.signal);
+      
+      // Check if aborted
+      if (abortControllerRef.current.signal.aborted) {
+        return;
+      }
+      
+      setSchema(result);
+      setOperations(result.operations);
+      setFilteredOperations(result.operations);
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      throw err;
+    }
   };
 
   const handleLoadSchema = useCallback(async (schemaTitle: string) => {
+    // Prevent loading if already loading this schema
+    if (isLoading && currentSchemaEntry?.title === schemaTitle) {
+      return;
+    }
+    
     setIsLoading(true);
+    setLoadingProgress(`Loading ${schemaTitle}...`);
     setError(null);
+    
     try {
       const registry = await loadSchemaRegistry();
       const entry = findSchemaByTitle(registry, schemaTitle);
@@ -149,24 +190,19 @@ function App() {
       await loadSchemaEntry(entry);
       selectOperation(null);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to load schema');
     } finally {
       setIsLoading(false);
+      setLoadingProgress('');
     }
-  }, [setSchema, setOperations, setFilteredOperations, selectOperation, setIsLoading, setError]);
-
-  // Toggle between Kibana and Elasticsearch for now
-  const handleToggleSchema = useCallback(async () => {
-    const nextSchema = currentSchemaEntry?.title === 'Kibana' ? 'Elasticsearch' : 'Kibana';
-    await handleLoadSchema(nextSchema);
-  }, [currentSchemaEntry, handleLoadSchema]);
+  }, [isLoading, currentSchemaEntry, setSchema, setOperations, setFilteredOperations, selectOperation, setIsLoading, setError]);
 
   const handleSelectInstance = useCallback((instance: DecryptedCredential | null) => {
     setSelectedInstance(instance);
     setSelectedInstanceId(instance?.id || null);
-    
-    // If instance has auth, we need to pass it to OperationDetail
-    // This will be handled via the selectedInstance prop
   }, []);
 
   return (
@@ -187,7 +223,7 @@ function App() {
           onSearchChange={setSearchQuery}
           selectedMethod={selectedMethod}
           onMethodChange={setSelectedMethod}
-          onLoadSchema={handleToggleSchema}
+          onLoadSchema={handleLoadSchema}
           isLoading={isLoading}
           baseUrl={baseUrl}
           onBaseUrlChange={setBaseUrl}
@@ -203,21 +239,32 @@ function App() {
           {error ? (
             <div className="empty-state">
               <div>
-                <p>Error: {error}</p>
-                <button onClick={loadRegistryAndDefaultSchema} className="load-schema-btn" style={{ marginTop: 16 }}>
-                  Retry
+                <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+                <h3 style={{ marginBottom: 8 }}>Error Loading Schema</h3>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>{error}</p>
+                <button onClick={loadRegistryAndDefaultSchema} className="execute-btn">
+                  Try Again
                 </button>
               </div>
             </div>
           ) : isLoading ? (
             <div className="empty-state">
-              <div>
-                <p>Loading schema...</p>
+              <div style={{ textAlign: 'center' }}>
+                <div className="spinner-large" style={{ margin: '0 auto 24px' }} />
+                <h3 style={{ marginBottom: 8 }}>Loading Schema</h3>
                 {currentSchemaEntry && (
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>
+                  <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
                     {currentSchemaEntry.title}
                   </p>
                 )}
+                {loadingProgress && (
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+                    {loadingProgress}
+                  </p>
+                )}
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 16, maxWidth: 400 }}>
+                  Large schemas like Elasticsearch may take a moment to parse...
+                </p>
               </div>
             </div>
           ) : selectedOperation ? (
@@ -230,6 +277,7 @@ function App() {
           ) : (
             <div className="empty-state">
               <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 64, marginBottom: 16 }}>🔌</div>
                 <h3 style={{ marginBottom: 8 }}>API Explorer</h3>
                 <p style={{ color: 'var(--text-secondary)' }}>
                   {schema?.title} v{schema?.version}
@@ -237,7 +285,7 @@ function App() {
                 <p style={{ marginTop: 16, fontSize: 14 }}>
                   {operations.length.toLocaleString()} operations loaded
                 </p>
-                <p style={{ marginTop: 24, fontSize: 13, color: 'var(--text-secondary)' }}>
+                <p style={{ marginTop: 24, fontSize: 13, color: 'var(--text-muted)' }}>
                   Select an operation from the sidebar to begin
                 </p>
               </div>

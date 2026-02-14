@@ -73,11 +73,11 @@ function Toolbar({
               value={currentSchema || ''}
               onChange={(e) => onLoadSchema(e.target.value)}
               disabled={isLoading}
-              className="schema-select"
+              className={`schema-select ${isLoading ? 'loading' : ''}`}
             >
               {availableSchemas.map((schemaName) => (
                 <option key={schemaName} value={schemaName}>
-                  {schemaName}
+                  {schemaName} {isLoading && currentSchema === schemaName ? '⏳' : ''}
                 </option>
               ))}
             </select>
