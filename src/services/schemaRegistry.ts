@@ -61,10 +61,11 @@ export async function loadSchemaFromRegistry(
       reject(new Error(`Timeout loading ${entry.title} schema after ${SCHEMA_LOAD_TIMEOUT/1000}s`));
     }, SCHEMA_LOAD_TIMEOUT);
     
-    // Clear timeout if aborted
+    // Clear timeout if aborted - but don't reject, just let it be cancelled
     signal?.addEventListener('abort', () => {
       clearTimeout(timeoutId);
-      reject(new Error('Schema loading aborted'));
+      // Use DOMException for proper abort error
+      reject(new DOMException('Schema loading aborted', 'AbortError'));
     });
   });
   

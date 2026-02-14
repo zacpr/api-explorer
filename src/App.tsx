@@ -131,6 +131,11 @@ function App() {
         setError('No schemas available in registry');
       }
     } catch (err) {
+      // Only show error if it's not an abort error
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.log('Schema loading was aborted');
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to load schema registry');
     } finally {
       setIsLoading(false);
@@ -162,7 +167,7 @@ function App() {
       setOperations(result.operations);
       setFilteredOperations(result.operations);
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof DOMException && err.name === 'AbortError') {
         return;
       }
       throw err;
@@ -190,7 +195,7 @@ function App() {
       await loadSchemaEntry(entry);
       selectOperation(null);
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof DOMException && err.name === 'AbortError') {
         return;
       }
       setError(err instanceof Error ? err.message : 'Failed to load schema');
