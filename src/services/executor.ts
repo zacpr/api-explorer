@@ -201,6 +201,13 @@ export async function executeOperation(
   } = {},
   options: { timeout?: number; signal?: AbortSignal; defaultHeaders?: Record<string, string>; useProxy?: boolean } = {}
 ): Promise<ExecutionResult> {
+  if (!baseUrl || baseUrl.trim() === '') {
+    return {
+      success: false,
+      error: 'Base URL is empty. Please configure an API URL.',
+    };
+  }
+  
   const url = buildRequestUrl(
     baseUrl,
     operation.path,
