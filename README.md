@@ -34,19 +34,50 @@ Open http://localhost:5173
 
 ### Desktop App
 
-```bash
-# Install Rust (first time only)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+The desktop app is built with **Tauri** - a Rust-based framework that creates tiny, fast native apps.
 
+#### Prerequisites
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install libwebkit2gtk-4.0-dev libssl-dev libgtk-3-dev libappindicator3-dev librsvg2-dev
+```
+
+**Linux (Fedora):**
+```bash
+sudo dnf install webkit2gtk4.0-devel openssl-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel
+```
+
+**macOS:**
+```bash
+# No additional dependencies needed
+```
+
+**Windows:**
+```bash
+# No additional dependencies needed
+```
+
+#### Install Rust
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+```
+
+#### Run Desktop App
+```bash
 # Install Tauri CLI
 npm install -g @tauri-apps/cli
 
-# Run development version
+# Run development version (opens native window)
 npm run tauri dev
 
 # Build for production
 npm run tauri build
 ```
+
+Built binaries will be in `src-tauri/target/release/bundle/`
 
 ## 📦 Download
 
