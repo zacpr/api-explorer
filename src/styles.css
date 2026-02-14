@@ -818,6 +818,22 @@ body {
   border-color: var(--accent);
 }
 
+.load-schema-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Schema indicator in toolbar */
+.schema-indicator {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.schema-indicator strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;

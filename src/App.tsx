@@ -1,7 +1,14 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
 import { searchOperations, filterByTag, filterByMethod } from '@/services/openapi';
-import { loadSchemaFromUrl } from '@/services/schemaLoader';
+import { 
+  loadSchemaRegistry, 
+  loadSchemaFromRegistry, 
+  getAvailableSchemas,
+  getDefaultSchema,
+  findSchemaByTitle,
+  type SchemaRegistryEntry 
+} from '@/services/schemaRegistry';
 import Sidebar from '@/components/Sidebar';
 import OperationDetail from '@/components/OperationDetail';
 import Toolbar from '@/components/Toolbar';
@@ -47,6 +54,9 @@ function App() {
   const setBaseUrl = (url: string) => updateSettings({ baseUrl: url });
   const setUseProxy = (use: boolean) => updateSettings({ useProxy: use });
   
+  const [registryEntries, setRegistryEntries] = useState<SchemaRegistryEntry[]>([]);
+  const [currentSchemaEntry, setCurrentSchemaEntry] = useState<SchemaRegistryEntry | null>(null);
+  
   const {
     schema,
     operations,
@@ -68,9 +78,9 @@ function App() {
     setError,
   } = useAppStore();
 
-  // Load schema on mount (using Kibana as default)
+  // Load registry and default schema on mount
   useEffect(() => {
-    loadDefaultSchema();
+    loadRegistryAndDefaultSchema();
   }, []);
 
   // Filter operations when criteria change
@@ -90,30 +100,48 @@ function App() {
     setFilteredOperations(result);
   }, [operations, searchQuery, selectedTag, selectedMethod, setFilteredOperations]);
 
-  const loadDefaultSchema = async () => {
+  const loadRegistryAndDefaultSchema = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Try Kibana schema first
-      const result = await loadSchemaFromUrl('/schemas/kibana-openapi-source.yaml');
-      setSchema(result);
-      setOperations(result.operations);
-      setFilteredOperations(result.operations);
+      const registry = await loadSchemaRegistry();
+      const availableSchemas = getAvailableSchemas(registry);
+      setRegistryEntries(availableSchemas);
+      
+      // Load default schema (first available)
+      const defaultEntry = getDefaultSchema(registry);
+      if (defaultEntry) {
+        await loadSchemaEntry(defaultEntry);
+      } else {
+        setError('No schemas available in registry');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load schema');
+      setError(err instanceof Error ? err.message : 'Failed to load schema registry');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLoadSchema = useCallback(async () => {
+  const loadSchemaEntry = async (entry: SchemaRegistryEntry) => {
+    setCurrentSchemaEntry(entry);
+    const result = await loadSchemaFromRegistry(entry);
+    setSchema(result);
+    setOperations(result.operations);
+    setFilteredOperations(result.operations);
+  };
+
+  const handleLoadSchema = useCallback(async (schemaTitle: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await loadSchemaFromUrl('/schemas/elasticsearch-openapi-source.yaml');
-      setSchema(result);
-      setOperations(result.operations);
-      setFilteredOperations(result.operations);
+      const registry = await loadSchemaRegistry();
+      const entry = findSchemaByTitle(registry, schemaTitle);
+      
+      if (!entry) {
+        throw new Error(`Schema '${schemaTitle}' not found in registry`);
+      }
+      
+      await loadSchemaEntry(entry);
       selectOperation(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load schema');
@@ -121,6 +149,12 @@ function App() {
       setIsLoading(false);
     }
   }, [setSchema, setOperations, setFilteredOperations, selectOperation, setIsLoading, setError]);
+
+  // Toggle between Kibana and Elasticsearch for now
+  const handleToggleSchema = useCallback(async () => {
+    const nextSchema = currentSchemaEntry?.title === 'Kibana' ? 'Elasticsearch' : 'Kibana';
+    await handleLoadSchema(nextSchema);
+  }, [currentSchemaEntry, handleLoadSchema]);
 
   return (
     <div className="app">
@@ -140,12 +174,14 @@ function App() {
           onSearchChange={setSearchQuery}
           selectedMethod={selectedMethod}
           onMethodChange={setSelectedMethod}
-          onLoadSchema={handleLoadSchema}
+          onLoadSchema={handleToggleSchema}
           isLoading={isLoading}
           baseUrl={baseUrl}
           onBaseUrlChange={setBaseUrl}
           useProxy={useProxy}
           onUseProxyChange={setUseProxy}
+          currentSchema={currentSchemaEntry?.title}
+          availableSchemas={registryEntries.map(e => e.title)}
         />
         
         <div className="content-area">
@@ -153,13 +189,22 @@ function App() {
             <div className="empty-state">
               <div>
                 <p>Error: {error}</p>
-                <button onClick={loadDefaultSchema} className="load-schema-btn" style={{ marginTop: 16 }}>
+                <button onClick={loadRegistryAndDefaultSchema} className="load-schema-btn" style={{ marginTop: 16 }}>
                   Retry
                 </button>
               </div>
             </div>
           ) : isLoading ? (
-            <div className="empty-state">Loading schema...</div>
+            <div className="empty-state">
+              <div>
+                <p>Loading schema...</p>
+                {currentSchemaEntry && (
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>
+                    {currentSchemaEntry.title}
+                  </p>
+                )}
+              </div>
+            </div>
           ) : selectedOperation ? (
             <OperationDetail operation={selectedOperation} baseUrl={baseUrl} useProxy={useProxy} />
           ) : (

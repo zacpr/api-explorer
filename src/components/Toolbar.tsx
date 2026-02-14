@@ -3,12 +3,14 @@ interface ToolbarProps {
   onSearchChange: (query: string) => void;
   selectedMethod: string | null;
   onMethodChange: (method: string | null) => void;
-  onLoadSchema: () => void;
+  onLoadSchema: (schemaName?: string) => void;
   isLoading: boolean;
   baseUrl: string;
   onBaseUrlChange: (url: string) => void;
   useProxy?: boolean;
   onUseProxyChange?: (use: boolean) => void;
+  currentSchema?: string;
+  availableSchemas?: string[];
 }
 
 function Toolbar({
@@ -22,7 +24,12 @@ function Toolbar({
   onBaseUrlChange,
   useProxy = false,
   onUseProxyChange,
+  currentSchema,
+  availableSchemas = [],
 }: ToolbarProps) {
+  const hasMultipleSchemas = availableSchemas.length > 1;
+  const otherSchema = currentSchema === 'Kibana' ? 'Elasticsearch' : 'Kibana';
+  
   return (
     <div className="toolbar">
       <input
@@ -65,14 +72,22 @@ function Toolbar({
         </label>
       </div>
 
-      <div style={{ marginLeft: 'auto' }}>
-        <button
-          onClick={onLoadSchema}
-          disabled={isLoading}
-          className="load-schema-btn"
-        >
-          {isLoading ? 'Loading...' : 'Load ES Schema'}
-        </button>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+        {currentSchema && (
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            Schema: <strong style={{ color: 'var(--text-primary)' }}>{currentSchema}</strong>
+          </span>
+        )}
+        {hasMultipleSchemas && (
+          <button
+            onClick={() => onLoadSchema(otherSchema)}
+            disabled={isLoading}
+            className="load-schema-btn"
+            title={`Switch to ${otherSchema} schema`}
+          >
+            {isLoading ? 'Loading...' : `Load ${otherSchema}`}
+          </button>
+        )}
       </div>
     </div>
   );
