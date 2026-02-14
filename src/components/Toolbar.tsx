@@ -1,4 +1,5 @@
 import InstanceSelector from './InstanceSelector';
+import ThemeSelector from './ThemeSelector';
 import type { DecryptedCredential } from '@/services/cryptoVault';
 
 interface ToolbarProps {
@@ -80,6 +81,8 @@ function Toolbar({
       </div>
 
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <ThemeSelector />
+        
         {currentSchema && (
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             Schema: <strong style={{ color: 'var(--text-primary)' }}>{currentSchema}</strong>

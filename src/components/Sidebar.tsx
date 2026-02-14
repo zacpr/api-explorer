@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ApiOperation } from '@/models/types';
+import Logo from './Logo';
 
 interface SidebarProps {
   tags: string[];
@@ -41,9 +42,14 @@ function Sidebar({
   return (
     <div className="sidebar">
       <div className="header">
-        <h1>API Explorer</h1>
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-          {schemaName || 'No schema loaded'}
+        <div className="brand">
+          <Logo size={36} />
+          <div>
+            <h1>API Explorer</h1>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {schemaName || 'No schema loaded'}
+            </div>
+          </div>
         </div>
       </div>
 
