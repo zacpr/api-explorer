@@ -1,3 +1,6 @@
+import InstanceSelector from './InstanceSelector';
+import type { DecryptedCredential } from '@/services/cryptoVault';
+
 interface ToolbarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -11,6 +14,8 @@ interface ToolbarProps {
   onUseProxyChange?: (use: boolean) => void;
   currentSchema?: string;
   availableSchemas?: string[];
+  onSelectInstance?: (instance: DecryptedCredential | null) => void;
+  selectedInstanceId?: string | null;
 }
 
 function Toolbar({
@@ -26,6 +31,8 @@ function Toolbar({
   onUseProxyChange,
   currentSchema,
   availableSchemas = [],
+  onSelectInstance,
+  selectedInstanceId,
 }: ToolbarProps) {
   const hasMultipleSchemas = availableSchemas.length > 1;
   const otherSchema = currentSchema === 'Kibana' ? 'Elasticsearch' : 'Kibana';
@@ -72,12 +79,29 @@ function Toolbar({
         </label>
       </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
         {currentSchema && (
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             Schema: <strong style={{ color: 'var(--text-primary)' }}>{currentSchema}</strong>
           </span>
         )}
+        
+        {onSelectInstance && currentSchema && (
+          <div style={{ width: 280 }}>
+            <InstanceSelector
+              schemaTitle={currentSchema}
+              onSelectInstance={(instance) => {
+                onSelectInstance(instance);
+                // Auto-update URL when instance is selected
+                if (instance) {
+                  onBaseUrlChange(instance.baseUrl);
+                }
+              }}
+              selectedInstanceId={selectedInstanceId}
+            />
+          </div>
+        )}
+
         {hasMultipleSchemas && (
           <button
             onClick={() => onLoadSchema(otherSchema)}

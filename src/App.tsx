@@ -9,6 +9,7 @@ import {
   findSchemaByTitle,
   type SchemaRegistryEntry 
 } from '@/services/schemaRegistry';
+import type { DecryptedCredential } from '@/services/cryptoVault';
 import Sidebar from '@/components/Sidebar';
 import OperationDetail from '@/components/OperationDetail';
 import Toolbar from '@/components/Toolbar';
@@ -56,6 +57,8 @@ function App() {
   
   const [registryEntries, setRegistryEntries] = useState<SchemaRegistryEntry[]>([]);
   const [currentSchemaEntry, setCurrentSchemaEntry] = useState<SchemaRegistryEntry | null>(null);
+  const [selectedInstance, setSelectedInstance] = useState<DecryptedCredential | null>(null);
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
   const {
     schema,
@@ -124,6 +127,8 @@ function App() {
 
   const loadSchemaEntry = async (entry: SchemaRegistryEntry) => {
     setCurrentSchemaEntry(entry);
+    setSelectedInstance(null);
+    setSelectedInstanceId(null);
     const result = await loadSchemaFromRegistry(entry);
     setSchema(result);
     setOperations(result.operations);
@@ -156,6 +161,14 @@ function App() {
     await handleLoadSchema(nextSchema);
   }, [currentSchemaEntry, handleLoadSchema]);
 
+  const handleSelectInstance = useCallback((instance: DecryptedCredential | null) => {
+    setSelectedInstance(instance);
+    setSelectedInstanceId(instance?.id || null);
+    
+    // If instance has auth, we need to pass it to OperationDetail
+    // This will be handled via the selectedInstance prop
+  }, []);
+
   return (
     <div className="app">
       <Sidebar
@@ -182,6 +195,8 @@ function App() {
           onUseProxyChange={setUseProxy}
           currentSchema={currentSchemaEntry?.title}
           availableSchemas={registryEntries.map(e => e.title)}
+          onSelectInstance={handleSelectInstance}
+          selectedInstanceId={selectedInstanceId}
         />
         
         <div className="content-area">
@@ -206,7 +221,12 @@ function App() {
               </div>
             </div>
           ) : selectedOperation ? (
-            <OperationDetail operation={selectedOperation} baseUrl={baseUrl} useProxy={useProxy} />
+            <OperationDetail 
+              operation={selectedOperation} 
+              baseUrl={baseUrl} 
+              useProxy={useProxy}
+              preAuthenticatedInstance={selectedInstance}
+            />
           ) : (
             <div className="empty-state">
               <div style={{ textAlign: 'center' }}>

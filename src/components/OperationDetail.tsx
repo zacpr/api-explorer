@@ -3,11 +3,13 @@ import { executeOperation, type ExecutionResult } from '@/services/executor';
 import { createBookmark, recordBookmarkUsage } from '@/db/database';
 import { JsonHighlighter } from '@/utils';
 import type { ApiOperation, HttpMethod } from '@/models/types';
+import type { DecryptedCredential } from '@/services/cryptoVault';
 
 interface OperationDetailProps {
   operation: ApiOperation;
   baseUrl?: string;
   useProxy?: boolean;
+  preAuthenticatedInstance?: DecryptedCredential | null;
 }
 
 const AUTH_STORAGE_KEY = 'api-explorer-auth';
@@ -39,7 +41,12 @@ function saveAuth(auth: SavedAuth) {
   }
 }
 
-function OperationDetail({ operation, baseUrl = 'http://localhost:9200', useProxy = false }: OperationDetailProps) {
+function OperationDetail({ 
+  operation, 
+  baseUrl = 'http://localhost:9200', 
+  useProxy = false,
+  preAuthenticatedInstance 
+}: OperationDetailProps) {
   const savedAuth = loadAuth();
   
   const [pathParams, setPathParams] = useState<Record<string, string>>({});
@@ -57,6 +64,22 @@ function OperationDetail({ operation, baseUrl = 'http://localhost:9200', useProx
   const [spaceAware, setSpaceAware] = useState(false);
   const [spaceId, setSpaceId] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Apply pre-authenticated instance credentials when available
+  useEffect(() => {
+    if (preAuthenticatedInstance) {
+      setAuthType(preAuthenticatedInstance.authType);
+      if (preAuthenticatedInstance.apiKey) {
+        setApiKey(preAuthenticatedInstance.apiKey);
+      }
+      if (preAuthenticatedInstance.username) {
+        setUsername(preAuthenticatedInstance.username);
+      }
+      if (preAuthenticatedInstance.password) {
+        setPassword(preAuthenticatedInstance.password);
+      }
+    }
+  }, [preAuthenticatedInstance]);
 
   // Save auth settings when they change (except password)
   useEffect(() => {
