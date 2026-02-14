@@ -7,7 +7,7 @@ interface ToolbarProps {
   onSearchChange: (query: string) => void;
   selectedMethod: string | null;
   onMethodChange: (method: string | null) => void;
-  onLoadSchema: (schemaName?: string) => void;
+  onLoadSchema: (schemaName: string) => void;
   isLoading: boolean;
   baseUrl: string;
   onBaseUrlChange: (url: string) => void;
@@ -36,66 +36,62 @@ function Toolbar({
   selectedInstanceId,
 }: ToolbarProps) {
   const hasMultipleSchemas = availableSchemas.length > 1;
-  const otherSchema = currentSchema === 'Kibana' ? 'Elasticsearch' : 'Kibana';
   
   return (
     <div className="toolbar">
-      <input
-        type="text"
-        placeholder="Search operations..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="search-input"
-        style={{ maxWidth: 240 }}
-      />
-
-      <select
-        value={selectedMethod || 'all'}
-        onChange={(e) => onMethodChange(e.target.value === 'all' ? null : e.target.value)}
-      >
-        <option value="all">All Methods</option>
-        <option value="get">GET</option>
-        <option value="post">POST</option>
-        <option value="put">PUT</option>
-        <option value="patch">PATCH</option>
-        <option value="delete">DELETE</option>
-      </select>
-
-      <div className="url-input-group">
-        <label>API URL:</label>
+      {/* Left section - Search and filters */}
+      <div className="toolbar-section">
         <input
           type="text"
-          value={baseUrl || ''}
-          onChange={(e) => onBaseUrlChange(e.target.value)}
-          placeholder="http://localhost:9200"
-          className="url-input"
+          placeholder="Search operations..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="search-input"
         />
-        <label className="proxy-toggle" title="Use dev server proxy to bypass CORS">
-          <input
-            type="checkbox"
-            checked={useProxy}
-            onChange={(e) => onUseProxyChange?.(e.target.checked)}
-          />
-          Use Proxy
-        </label>
+
+        <select
+          value={selectedMethod || 'all'}
+          onChange={(e) => onMethodChange(e.target.value === 'all' ? null : e.target.value)}
+          className="method-select"
+        >
+          <option value="all">All Methods</option>
+          <option value="get">GET</option>
+          <option value="post">POST</option>
+          <option value="put">PUT</option>
+          <option value="patch">PATCH</option>
+          <option value="delete">DELETE</option>
+        </select>
       </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ThemeSelector />
-        
-        {currentSchema && (
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            Schema: <strong style={{ color: 'var(--text-primary)' }}>{currentSchema}</strong>
-          </span>
+      {/* Middle section - Schema & Instance */}
+      <div className="toolbar-section toolbar-center">
+        {/* Schema Selector Dropdown */}
+        {hasMultipleSchemas && (
+          <div className="schema-selector-wrapper">
+            <label>Schema</label>
+            <select
+              value={currentSchema || ''}
+              onChange={(e) => onLoadSchema(e.target.value)}
+              disabled={isLoading}
+              className="schema-select"
+            >
+              {availableSchemas.map((schemaName) => (
+                <option key={schemaName} value={schemaName}>
+                  {schemaName}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
-        
+
+        {/* Instance Selector */}
         {onSelectInstance && currentSchema && (
-          <div style={{ width: 280 }}>
+          <div className="instance-selector-wrapper">
+            <label>Instance</label>
             <InstanceSelector
               schemaTitle={currentSchema}
               onSelectInstance={(instance) => {
                 onSelectInstance(instance);
-                // Auto-update URL when instance is selected
                 if (instance) {
                   onBaseUrlChange(instance.baseUrl);
                 }
@@ -104,17 +100,31 @@ function Toolbar({
             />
           </div>
         )}
+      </div>
 
-        {hasMultipleSchemas && (
-          <button
-            onClick={() => onLoadSchema(otherSchema)}
-            disabled={isLoading}
-            className="load-schema-btn"
-            title={`Switch to ${otherSchema} schema`}
-          >
-            {isLoading ? 'Loading...' : `Load ${otherSchema}`}
-          </button>
-        )}
+      {/* Right section - URL, Proxy, Theme */}
+      <div className="toolbar-section toolbar-right">
+        <div className="url-input-group">
+          <label>URL</label>
+          <input
+            type="text"
+            value={baseUrl || ''}
+            onChange={(e) => onBaseUrlChange(e.target.value)}
+            placeholder="http://localhost:9200"
+            className="url-input"
+          />
+        </div>
+
+        <label className="proxy-toggle" title="Use dev server proxy to bypass CORS">
+          <input
+            type="checkbox"
+            checked={useProxy}
+            onChange={(e) => onUseProxyChange?.(e.target.checked)}
+          />
+          <span>Proxy</span>
+        </label>
+
+        <ThemeSelector />
       </div>
     </div>
   );

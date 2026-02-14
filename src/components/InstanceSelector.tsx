@@ -160,21 +160,21 @@ function InstanceSelector({
 
   return (
     <div className="instance-selector">
-      <div className="instance-select-row">
+      <div className="instance-select-row compact">
         <select
           value={selectedInstanceId || 'custom'}
           onChange={(e) => handleSelect(e.target.value)}
           className="instance-dropdown"
         >
-          <option value="custom">Custom (no saved instance)</option>
+          <option value="custom">Custom (enter URL)</option>
           {instances.map((inst) => (
             <option key={inst.id} value={inst.id}>
-              {inst.name} ({inst.baseUrl})
+              {inst.name}
             </option>
           ))}
         </select>
         <button 
-          className="add-instance-btn"
+          className="add-instance-btn compact"
           onClick={() => {
             setShowAddModal(true);
             setError(null);

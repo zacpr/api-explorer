@@ -325,14 +325,51 @@ body {
 .toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 16px 24px;
-  gap: 16px;
+  gap: 24px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-glass);
   backdrop-filter: var(--blur-glass);
+  flex-wrap: wrap;
 }
 
-.toolbar select {
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-center {
+  flex: 1;
+  justify-content: center;
+  gap: 20px;
+}
+
+.toolbar-right {
+  gap: 16px;
+}
+
+/* Search input in toolbar */
+.toolbar .search-input {
+  width: 220px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: all var(--transition-fast);
+}
+
+.toolbar .search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Method select */
+.method-select {
   padding: 10px 14px;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -343,29 +380,82 @@ body {
   transition: all var(--transition-fast);
 }
 
-.toolbar select:focus {
+.method-select:focus {
   outline: none;
   border-color: var(--accent);
 }
 
+/* Schema selector */
+.schema-selector-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schema-selector-wrapper label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.schema-select {
+  padding: 10px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 160px;
+}
+
+.schema-select:hover {
+  border-color: var(--accent);
+}
+
+.schema-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Instance selector wrapper */
+.instance-selector-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+
+.instance-selector-wrapper label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* URL input group */
 .url-input-group {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: 8px;
-  padding-left: 16px;
-  border-left: 1px solid var(--border);
+  flex-direction: column;
+  gap: 4px;
 }
 
 .url-input-group label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .url-input {
-  width: 260px;
+  width: 220px;
   padding: 10px 14px;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -382,26 +472,30 @@ body {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+/* Proxy toggle */
 .proxy-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   transition: all var(--transition-fast);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
 }
 
 .proxy-toggle:hover {
-  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
 
 .proxy-toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   accent-color: var(--accent);
   cursor: pointer;
 }
@@ -1113,6 +1207,10 @@ body {
   align-items: center;
 }
 
+.instance-select-row.compact {
+  gap: 6px;
+}
+
 .instance-dropdown {
   flex: 1;
   padding: 10px 14px;
@@ -1150,6 +1248,12 @@ body {
 .add-instance-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px var(--accent-glow);
+}
+
+.add-instance-btn.compact {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
 }
 
 .saved-instances {
