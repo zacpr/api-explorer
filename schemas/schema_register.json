@@ -1,0 +1,20 @@
+{
+    "schemas": [
+        {
+            "can_download_from": "https://www.elastic.co/docs/api/doc/kibana.yaml",
+            "downloads_to_file": "kibana-openapi-source.yaml",
+            "title": "Kibana"
+        },
+        {
+            "can_download_from": "https://www.elastic.co/docs/api/doc/elasticsearch.yaml",
+            "downloads_to_file": "elasticsearch-openapi-source.yaml",
+            "title": "Elasticsearch"
+        },
+        {
+            "can_download_from": "",
+            "downloads_to_file": "some_other_swagger.yaml",
+            "title": "Arbitrary Swagger",
+            "example": true
+        }
+    ]
+}   
