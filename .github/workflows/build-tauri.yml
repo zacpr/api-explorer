@@ -1,0 +1,197 @@
+name: Build Tauri Desktop Apps
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'api-explorer/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: api-explorer
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: api-explorer
+        run: npm test -- --run
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            args: ''
+            label: 'Linux'
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            label: 'macOS (Apple Silicon)'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            label: 'macOS (Intel)'
+          - platform: 'windows-latest'
+            args: ''
+            label: 'Windows'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libssl-dev libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'api-explorer/package-lock.json'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Install dependencies
+        working-directory: api-explorer
+        run: npm ci
+
+      - name: Build web assets
+        working-directory: api-explorer
+        run: npm run build
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: 'api-explorer'
+          args: ${{ matrix.args }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-app-${{ matrix.platform }}${{ matrix.args && format('-{0}', matrix.args) || '' }}
+          path: |
+            api-explorer/src-tauri/target/release/bundle/**/*.deb
+            api-explorer/src-tauri/target/release/bundle/**/*.AppImage
+            api-explorer/src-tauri/target/release/bundle/**/*.dmg
+            api-explorer/src-tauri/src-tauri/target/release/bundle/**/*.app
+            api-explorer/src-tauri/target/release/bundle/**/*.msi
+            api-explorer/src-tauri/target/release/bundle/**/*.exe
+            api-explorer/src-tauri/target/release/bundle/**/*.zip
+          if-no-files-found: warn
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: tauri-app-*
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la artifacts/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          body: |
+            ## API Explorer Desktop
+            
+            Interactive OpenAPI/Swagger API client with live execution.
+            
+            ### Installation
+            
+            **Linux:**
+            - Download `.deb` for Debian/Ubuntu
+            - Download `.AppImage` for universal Linux (no install needed)
+            
+            **macOS:**
+            - Download `.dmg` and drag to Applications
+            - Apple Silicon (M1/M2): Use `*-aarch64.dmg`
+            - Intel Macs: Use `*-x86_64.dmg`
+            
+            **Windows:**
+            - Download `.msi` installer
+            
+            ### Features
+            - 🎨 10 beautiful themes
+            - 🔐 Encrypted credential storage
+            - 🚀 Live API execution
+            - 🔖 Bookmark operations
+            - 🪐 Kibana space support
+
+  update-release-draft:
+    name: Update Release Draft
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: tauri-app-*
+          merge-multiple: true
+
+      - name: Update nightly release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**
+          tag_name: nightly
+          name: Nightly Build
+          body: |
+            ## API Explorer - Nightly Build
+            
+            This is an automated build from the latest `main` branch.
+            
+            ⚠️ This build may be unstable. For stable releases, use the versioned releases.
+            
+            ### Downloads
+            See assets below for your platform.
+          draft: false
+          prerelease: true
