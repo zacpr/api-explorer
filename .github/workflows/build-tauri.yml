@@ -31,7 +31,7 @@ jobs:
       
       - name: Run tests
         working-directory: .
-        run: timeout 60 npm test -- --run
+        run: npm test -- --run
 
   build:
     name: Build ${{ matrix.platform }}

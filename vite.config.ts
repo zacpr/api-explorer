@@ -50,5 +50,6 @@ export default defineConfig({
     },
     watch: false,
     pool: 'forks',
+    teardownTimeout: 5000,
   },
 });

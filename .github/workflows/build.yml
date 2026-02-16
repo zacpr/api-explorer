@@ -26,7 +26,7 @@ jobs:
       
       - name: Run tests
         working-directory: .
-        run: timeout 60 npm test -- --run
+        run: npm test -- --run
 
       - name: Build web assets
         working-directory: .
