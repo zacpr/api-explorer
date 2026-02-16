@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "API Explorer",
-    "version": "0.1.0"
+    "version": "1.0.11"
   },
   "tauri": {
     "allowlist": {
@@ -73,7 +73,7 @@
       }
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
     },
     "updater": {
       "active": false
