@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     {
