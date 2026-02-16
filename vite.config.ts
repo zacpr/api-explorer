@@ -48,5 +48,6 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src'),
     },
+    poolExitForce: true,
   },
 });
