@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   buildRequestUrl,
   buildHeaders,
@@ -6,8 +6,16 @@ import {
   executeOperation,
 } from '@/services/executor';
 import type { ApiOperation } from '@/models/types';
+import { mockFetch, restoreFetch } from './setup';
 
 describe('Phase 2: Execution', () => {
+  beforeAll(() => {
+    mockFetch();
+  });
+  
+  afterAll(() => {
+    restoreFetch();
+  });
   describe('P2-01: Build request with path parameters', () => {
     it('should replace path parameters', () => {
       const url = buildRequestUrl(
