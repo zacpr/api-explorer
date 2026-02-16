@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "API Explorer",
-    "version": "1.0.13"
+    "version": "1.0.14"
   },
   "tauri": {
     "allowlist": {
@@ -88,8 +88,7 @@
         "minWidth": 1000,
         "minHeight": 700,
         "center": true,
-        "decorations": true,
-        "devtools": true
+        "decorations": true
       }
     ]
   }
