@@ -80,10 +80,6 @@ jobs:
         working-directory: .
         run: npm ci
 
-      - name: Build web assets
-        working-directory: .
-        run: npm run build
-
       - name: Build Tauri app
         run: npm run tauri build -- ${{ matrix.args }}
 
